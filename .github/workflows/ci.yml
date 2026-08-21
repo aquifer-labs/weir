@@ -20,3 +20,13 @@ jobs:
       # The plugin manifests and the crate must not drift: users update the
       # binary and the plugin separately, so a mismatch ships silently.
       - run: scripts/version-check.py
+      # --locked: build exactly what is in Cargo.lock, never silently resolve
+      # something newer. The lockfile is the record of what was audited.
+      - run: cargo build --locked --workspace
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check

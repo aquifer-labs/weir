@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Dependency policy, in the spirit of Pi's supply-chain hardening.
+#
+# Weir runs inside someone else's agent pipeline and fires on every tool call.
+# A compromised transitive dependency would execute with the agent's full reach.
+# That is a different risk profile from a library, and it is why this file is
+# stricter than a default.
+#
+# Run: cargo deny check
+
+[advisories]
+yanked = "deny"
+ignore = []
+
+[licenses]
+# Permissive only. A copyleft dependency would change what downstream users of
+# an Apache-2.0 tool are allowed to do, quietly.
+allow = ["Apache-2.0", "MIT", "Unicode-3.0", "Unlicense"]
+confidence-threshold = 0.9
+
+[bans]
+# Two versions of the same crate means one of them is not the one you audited.
+multiple-versions = "deny"
+wildcards = "deny"
+# Nothing here yet. Add with a comment saying why, never silently.
+deny = []
+skip = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
