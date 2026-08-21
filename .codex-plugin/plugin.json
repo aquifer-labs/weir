@@ -2,10 +2,18 @@
   "name": "weir",
   "version": "0.1.0",
   "description": "Bounds what flows into an agent's context. Shadow mode by default: records what it would change, alters nothing until you arm it.",
-  "author": { "name": "Aquifer Labs", "url": "https://github.com/aquifer-labs" },
+  "author": {
+    "name": "Aquifer Labs",
+    "url": "https://github.com/aquifer-labs"
+  },
   "homepage": "https://github.com/aquifer-labs/weir",
   "repository": "https://github.com/aquifer-labs/weir",
   "license": "Apache-2.0",
-  "keywords": ["context", "tokens", "hooks", "observability"],
+  "keywords": [
+    "context",
+    "tokens",
+    "hooks",
+    "observability"
+  ],
   "hooks": "./hooks/hooks.json"
 }

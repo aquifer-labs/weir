@@ -17,3 +17,6 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      # The plugin manifests and the crate must not drift: users update the
+      # binary and the plugin separately, so a mismatch ships silently.
+      - run: scripts/version-check.py

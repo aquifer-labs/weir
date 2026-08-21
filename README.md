@@ -53,7 +53,40 @@ Early, but working end to end on both harnesses.
 
 ## Install
 
-    cargo install --path crates/weir-cli
+Weir is two halves, and they update independently — that is the one thing worth
+understanding before installing it.
+
+- The **binary** does the work. Install it with cargo or brew.
+- The **plugin** is just the hook manifests that tell Claude Code and Codex to
+  call the binary. It reaches you through each harness's marketplace.
+
+Install the binary:
+
+    cargo install --git https://github.com/aquifer-labs/weir weir-cli
+
+Then wire it into the harnesses:
+
+    weir init                                       # Claude Code, direct
+    codex plugin marketplace add aquifer-labs/weir  # Codex, as a plugin
+    codex plugin add weir --marketplace weir
+
+Codex gates hooks behind persisted trust: start `codex` once interactively and
+approve them, or it will skip them without saying so.
+
+## Updating
+
+Update both halves, then check they agree:
+
+    cargo install --git https://github.com/aquifer-labs/weir weir-cli --force
+    codex plugin marketplace upgrade weir
+    weir doctor
+
+`weir doctor` exists for exactly this: it prints the binary version, the plugin
+version each harness has, whether the hooks are registered and trusted, and
+which config is in effect. A mismatch is the ordinary failure here and it is
+silent — the hooks keep firing, they just do the wrong thing. CI refuses to
+publish a release whose manifests and crate version disagree, so a mismatch can
+only come from a half-finished update on your side.
 
 ## Use
 
