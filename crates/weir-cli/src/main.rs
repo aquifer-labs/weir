@@ -8,6 +8,7 @@
 //! at the end.
 
 mod config;
+mod doctor;
 mod gate;
 mod hook;
 mod init;
@@ -36,6 +37,8 @@ enum Command {
     Hook(hook::HookArgs),
     /// Report what shadow mode would have changed
     Shadow(shadow::ShadowArgs),
+    /// Check that the binary, the plugin and the hooks are in step
+    Doctor(doctor::DoctorArgs),
 }
 
 fn main() -> Result<()> {
@@ -44,5 +47,6 @@ fn main() -> Result<()> {
         Command::Init(args) => init::run(args),
         Command::Hook(args) => hook::run(args),
         Command::Shadow(args) => shadow::run(args),
+        Command::Doctor(args) => doctor::run(args),
     }
 }

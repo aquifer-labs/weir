@@ -16,7 +16,24 @@ permissions:
   contents: write
 
 jobs:
+  # A release is the moment the two halves are supposed to line up: the tag
+  # publishes binaries, and the marketplaces serve the manifests from the same
+  # commit. If they disagree, users get a plugin and a binary that were never
+  # tested together - so refuse to publish rather than ship the mismatch.
+  versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/version-check.py
+      - name: Tag must match the crate version
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          crate="v$(sed -n '/^\[workspace\.package\]/,/^\[/p' Cargo.toml | sed -n 's/^version = "\(.*\)"/\1/p')"
+          echo "tag=$tag crate=$crate"
+          [ "$tag" = "$crate" ] || { echo "::error::tag $tag != crate $crate"; exit 1; }
+
   build:
+    needs: versions
     strategy:
       fail-fast: false
       matrix:
