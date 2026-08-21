@@ -16,13 +16,10 @@ use clap::Args;
 use serde_json::{Value, json};
 use std::io::Read;
 
+use crate::config;
 use crate::gate::trim;
+use crate::policy;
 use crate::shape::{Limits, shape};
-
-/// Results above this are candidates for trimming. Measured on real logs, the
-/// 5-20k token band carries the largest share of context pressure, so the
-/// threshold sits at its lower edge.
-const GATE_BUDGET_TOKENS: u64 = 5000;
 
 #[derive(Args)]
 pub struct HookArgs {
@@ -87,11 +84,47 @@ pub fn run(args: HookArgs) -> Result<()> {
         .and_then(Value::as_str)
         .unwrap_or("");
     let log = log_path(args.log);
+    // The agent's working directory is where a project-level weir.toml lives.
+    let cwd = payload
+        .get("cwd")
+        .and_then(Value::as_str)
+        .map(std::path::Path::new);
+    let cfg = config::load(cwd);
 
     match event {
         "PreToolUse" => {
             let input = payload.get("tool_input").cloned().unwrap_or(Value::Null);
-            let Some(s) = shape(tool, &input, &Limits::default()) else {
+
+            // Refusals come first: there is no point shaping a call that must
+            // not run. Denials are enforced even in shadow mode - a guard rail
+            // that only reports is not a guard rail.
+            if let Some(d) =
+                policy::check(tool, &input, &cfg.policy.deny_bash, &cfg.policy.deny_sql)
+            {
+                record(
+                    &log,
+                    &json!({
+                        "event": "PreToolUse", "tool": tool, "rule": d.rule,
+                        "note": d.reason, "enforced": true, "denied": true,
+                    }),
+                );
+                println!(
+                    "{}",
+                    json!({"hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "deny",
+                        "permissionDecisionReason": format!("weir/{}: {}", d.rule, d.reason)
+                    }})
+                );
+                return Ok(());
+            }
+
+            let limits = Limits {
+                sql_limit: cfg.shape.sql_limit,
+                recall_limit: cfg.shape.recall_limit,
+                shell_bytes: cfg.shape.shell_cap_bytes,
+            };
+            let Some(s) = shape(tool, &input, &limits) else {
                 println!("{{}}");
                 return Ok(());
             };
@@ -132,10 +165,14 @@ pub fn run(args: HookArgs) -> Result<()> {
             };
             let before = approx_tokens(&resp);
 
-            match text
-                .as_deref()
-                .and_then(|t| trim(t, GATE_BUDGET_TOKENS, 40, 40))
-            {
+            match text.as_deref().and_then(|t| {
+                trim(
+                    t,
+                    cfg.gate.budget_tokens,
+                    cfg.gate.head_lines,
+                    cfg.gate.tail_lines,
+                )
+            }) {
                 Some(t) => {
                     record(
                         &log,

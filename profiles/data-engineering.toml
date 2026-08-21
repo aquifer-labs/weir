@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Data-engineering profile.
+#
+# Assumes you spend the day pointing agents at warehouses and log files: results
+# are large, queries are cheap to re-run narrower, and an accidental write is
+# expensive. Tighter than the defaults on purpose.
+#
+# The deny lists are guard rails, not a boundary. A hook sees the literal call;
+# the same statement inside a script or a variable goes straight past it. Give
+# the agent a read-only database role and this file becomes a convenience rather
+# than your only defence.
+
+[shape]
+sql_limit = 1000        # unbounded SELECTs get this appended
+recall_limit = 5        # memory recalls are re-read on every later turn
+shell_cap_bytes = 4000
+
+[gate]
+budget_tokens = 4000    # lower than default: warehouse output is bulky and repetitive
+head_lines = 30
+tail_lines = 30
+
+[policy]
+deny_sql = ["DROP", "TRUNCATE", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "GRANT", "REVOKE"]
+deny_bash = ["rm -rf", "mkfs", "dd if=", "> /dev/", ":(){", "shutdown", "diskutil erase"]
