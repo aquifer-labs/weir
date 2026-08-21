@@ -1,6 +1,6 @@
 {
   "name": "weir",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Bounds what flows into an agent's context. Shadow mode by default: records what it would change, alters nothing until you arm it.",
   "author": {
     "name": "Aquifer Labs",
