@@ -7,7 +7,11 @@
 //! re-reads it, so a small output early in a long session outweighs a large one
 //! at the end.
 
+mod hook;
+mod init;
 mod scan;
+mod shadow;
+mod shape;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -23,10 +27,19 @@ struct Cli {
 enum Command {
     /// Measure context pressure in local agent session logs
     Scan(scan::ScanArgs),
+    /// Install Weir's hooks into the harnesses you already use
+    Init(init::InitArgs),
+    /// Hook entry point (reads a hook payload on stdin)
+    Hook(hook::HookArgs),
+    /// Report what shadow mode would have changed
+    Shadow(shadow::ShadowArgs),
 }
 
 fn main() -> Result<()> {
     match Cli::parse().command {
         Command::Scan(args) => scan::run(args),
+        Command::Init(args) => init::run(args),
+        Command::Hook(args) => hook::run(args),
+        Command::Shadow(args) => shadow::run(args),
     }
 }
