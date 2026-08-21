@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: Apache-2.0
+//! Weir — measure and bound what flows into an agent's context.
+//!
+//! `weir scan` reads local Claude Code and Codex session logs and reports where
+//! context pressure actually comes from. Pressure is the metric that matters:
+//! a tool result costs its own tokens multiplied by every later model turn that
+//! re-reads it, so a small output early in a long session outweighs a large one
+//! at the end.
+
+mod scan;
+
+use anyhow::Result;
+use clap::{Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(name = "weir", version, about = "Measure and bound agent context", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Subcommand)]
+enum Command {
+    /// Measure context pressure in local agent session logs
+    Scan(scan::ScanArgs),
+}
+
+fn main() -> Result<()> {
+    match Cli::parse().command {
+        Command::Scan(args) => scan::run(args),
+    }
+}
