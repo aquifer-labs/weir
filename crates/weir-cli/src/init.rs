@@ -114,20 +114,47 @@ fn install_claude(dry: bool) -> Result<bool> {
     Ok(changed)
 }
 
-/// Codex is detected but not written to yet.
+/// Codex takes hooks only through a plugin, never from `config.toml`.
 ///
-/// Codex loads hooks from a plugin-supplied JSON file and records only a trust
-/// hash in `config.toml`; appending hook tables to `config.toml` directly is not
-/// a path we have verified. Writing an unverified shape into a live agent config
-/// is exactly the kind of breakage this tool exists to avoid, so `init` reports
-/// and stops.
+/// Hook tables written into `config.toml` parse cleanly and then do nothing —
+/// verified by running a tool call and watching no hook fire. Codex loads hooks
+/// from a plugin manifest and gates them behind persisted trust, which is what
+/// the `trusted_hash` entries under `[hooks.state]` are for.
+///
+/// So we report status and hand over the two commands rather than editing
+/// anything: installing a plugin is Codex's job, and the trust prompt has to be
+/// answered by a human on the first interactive run.
 fn install_codex(_dry: bool) -> Result<bool> {
-    let path = home().join(".codex/config.toml");
-    if !path.exists() {
+    let cfg = home().join(".codex/config.toml");
+    if !cfg.exists() {
         return Ok(false);
     }
-    println!("Codex: {}", path.display());
-    println!("  detected, not installed yet — hook delivery format not verified");
+    println!("Codex: {}", cfg.display());
+
+    let installed = home().join(".codex/plugins/cache/weir").exists();
+    if installed {
+        println!("  plugin installed");
+        // A trust entry is keyed like `[hooks.state."weir@weir:hooks/hooks.json:pre_tool_use:0:0"]`.
+        // Looking for the two words separately gives a false positive, because
+        // `hooks.state` and `weir` both appear in an untrusted config already.
+        let trusted = std::fs::read_to_string(&cfg)
+            .map(|c| {
+                c.lines()
+                    .any(|l| l.starts_with("[hooks.state.") && l.contains("weir@"))
+            })
+            .unwrap_or(false);
+        if trusted {
+            println!("  hooks trusted");
+        } else {
+            println!("  hooks NOT trusted yet — start `codex` once interactively and approve them");
+            println!("  (until then Codex silently skips them)");
+        }
+    } else {
+        println!("  plugin not installed. Run:");
+        println!("    codex plugin marketplace add aquifer-labs/weir");
+        println!("    codex plugin add weir --marketplace weir");
+        println!("  then start `codex` once interactively to approve the hooks.");
+    }
     Ok(false)
 }
 
@@ -159,6 +186,21 @@ mod tests {
         });
         assert!(already_installed(&events, "PreToolUse"));
         assert!(!already_installed(&events, "PostToolUse"));
+    }
+
+    #[test]
+    fn a_trust_entry_needs_our_plugin_key_not_just_the_word_weir() {
+        let untrusted = "[hooks.state.\"ponytail@ponytail:hooks/h.json:session_start:0:0\"]\nmodel = \"weir-local\"\n";
+        let trusted = "[hooks.state.\"weir@weir:hooks/hooks.json:pre_tool_use:0:0\"]\ntrusted_hash = \"sha256:x\"\n";
+        let looks_trusted = |c: &str| {
+            c.lines()
+                .any(|l| l.starts_with("[hooks.state.") && l.contains("weir@"))
+        };
+        assert!(
+            !looks_trusted(untrusted),
+            "the word weir alone must not count"
+        );
+        assert!(looks_trusted(trusted));
     }
 
     #[test]
