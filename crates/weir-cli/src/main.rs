@@ -7,9 +7,11 @@
 //! re-reads it, so a small output early in a long session outweighs a large one
 //! at the end.
 
+mod config;
 mod gate;
 mod hook;
 mod init;
+mod policy;
 mod scan;
 mod shadow;
 mod shape;
