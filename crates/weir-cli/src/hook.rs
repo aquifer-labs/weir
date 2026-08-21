@@ -16,7 +16,13 @@ use clap::Args;
 use serde_json::{Value, json};
 use std::io::Read;
 
+use crate::gate::trim;
 use crate::shape::{Limits, shape};
+
+/// Results above this are candidates for trimming. Measured on real logs, the
+/// 5-20k token band carries the largest share of context pressure, so the
+/// threshold sits at its lower edge.
+const GATE_BUDGET_TOKENS: u64 = 5000;
 
 #[derive(Args)]
 pub struct HookArgs {
@@ -116,20 +122,58 @@ pub fn run(args: HookArgs) -> Result<()> {
             }
         }
         "PostToolUse" => {
-            // Nothing is rewritten here yet. This only measures what a cap would
-            // have saved, so the shadow report can compare rules against reality.
             let resp = payload.get("tool_response").cloned().unwrap_or(Value::Null);
-            let tokens = approx_tokens(&resp);
-            if tokens >= 500 {
-                record(
-                    &log,
-                    &json!({
-                        "event": "PostToolUse",
-                        "tool": tool,
-                        "result_tokens": tokens,
-                        "duration_ms": payload.get("duration_ms"),
-                    }),
-                );
+            // Only plain-text output can be trimmed meaningfully. Structured
+            // results are left alone: cutting the middle out of JSON produces
+            // something that parses as nothing.
+            let text = match &resp {
+                Value::String(s) => Some(s.clone()),
+                _ => None,
+            };
+            let before = approx_tokens(&resp);
+
+            match text
+                .as_deref()
+                .and_then(|t| trim(t, GATE_BUDGET_TOKENS, 40, 40))
+            {
+                Some(t) => {
+                    record(
+                        &log,
+                        &json!({
+                            "event": "PostToolUse",
+                            "tool": tool,
+                            "rule": "gate_trim",
+                            "enforced": args.enforce,
+                            "result_tokens": t.before_tokens,
+                            "trimmed_tokens": t.after_tokens,
+                            "saved_tokens": t.before_tokens - t.after_tokens,
+                            "duration_ms": payload.get("duration_ms"),
+                        }),
+                    );
+                    if args.enforce {
+                        println!(
+                            "{}",
+                            json!({"hookSpecificOutput": {
+                                "hookEventName": "PostToolUse",
+                                "updatedToolOutput": t.text
+                            }})
+                        );
+                        return Ok(());
+                    }
+                }
+                None => {
+                    if before >= 500 {
+                        record(
+                            &log,
+                            &json!({
+                                "event": "PostToolUse",
+                                "tool": tool,
+                                "result_tokens": before,
+                                "duration_ms": payload.get("duration_ms"),
+                            }),
+                        );
+                    }
+                }
             }
             println!("{{}}");
         }
