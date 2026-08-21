@@ -33,11 +33,23 @@ Two corollaries that fall out of measuring real logs:
 before changing anything. Measure first: without a baseline, no claim about
 savings is checkable — including ours.
 
+## What it does
+
+Two levers, because the harnesses expose two:
+
+- **Shape** (`PreToolUse` → `updatedInput`) bounds a request whose output size is
+  predictable: a `SELECT` with no `LIMIT`, a recall with a large default, a bare
+  `cat`. Cheaper not to produce the data than to produce and discard it.
+- **Gate** (`PostToolUse` → `updatedToolOutput`) handles the rest. A shell command
+  can return 50 tokens or 7,000 and there is no way to know beforehand, so this
+  looks at the real output, keeps the head and the tail, and says what it cut.
+
+Both start in **shadow mode**: they record what they would have done and change
+nothing. Arm them with `--enforce` once the numbers justify it.
+
 ## Status
 
-Early. `weir scan` works. Gating is next, and lands in shadow mode first: it logs
-what it *would* have changed, so the effect can be measured before anything is
-actually altered.
+Early, but working end to end on both harnesses.
 
 ## Install
 
