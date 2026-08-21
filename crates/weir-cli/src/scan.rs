@@ -467,11 +467,8 @@ fn print_table(r: &Report, top: usize) {
             r.assistant_turns as f64 / r.user_turns as f64
         );
     }
-    if r.assistant_turns > 0 {
-        println!(
-            "Context per model turn:   {}",
-            thousands(r.billed_context / r.assistant_turns)
-        );
+    if let Some(per_turn) = r.billed_context.checked_div(r.assistant_turns) {
+        println!("Context per model turn:   {}", thousands(per_turn));
     }
 
     println!("\nContext pressure by tool  (result tokens x later turns that re-read them)");
