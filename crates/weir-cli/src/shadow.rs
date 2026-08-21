@@ -100,6 +100,8 @@ pub fn run(args: ShadowArgs) -> Result<()> {
     for (tool, (calls, tokens)) in rows.into_iter().take(12) {
         println!("  {tool:<40}{calls:>8}{tokens:>14}");
     }
-    println!("\nArm a rule with `weir hook --enforce` in your hook config once the\nnumbers above justify it.\n");
+    println!(
+        "\nArm a rule with `weir hook --enforce` in your hook config once the\nnumbers above justify it.\n"
+    );
     Ok(())
 }

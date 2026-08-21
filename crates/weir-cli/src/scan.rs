@@ -176,13 +176,13 @@ fn parse_claude(path: &Path) -> Result<(Vec<Event>, u64, u64, u64)> {
                 }
                 if let Some(blocks) = msg.and_then(|m| m.get("content")).and_then(Value::as_array) {
                     for b in blocks {
-                        if b.get("type").and_then(Value::as_str) == Some("tool_use") {
-                            if let (Some(id), Some(name)) = (
+                        if b.get("type").and_then(Value::as_str) == Some("tool_use")
+                            && let (Some(id), Some(name)) = (
                                 b.get("id").and_then(Value::as_str),
                                 b.get("name").and_then(Value::as_str),
-                            ) {
-                                pending.insert(id.to_string(), name.to_string());
-                            }
+                            )
+                        {
+                            pending.insert(id.to_string(), name.to_string());
                         }
                     }
                 }
@@ -253,12 +253,12 @@ fn parse_codex(path: &Path) -> Result<(Vec<Event>, u64, u64, u64)> {
             _ => {}
         }
         // Codex reports cumulative usage; keep the high-water mark per session.
-        if let Some(info) = p.get("info") {
-            if let Some(tu) = info.get("total_token_usage") {
-                let g = |k: &str| tu.get(k).and_then(Value::as_u64).unwrap_or(0);
-                ctx = ctx.max(g("input_tokens"));
-                out = out.max(g("output_tokens"));
-            }
+        if let Some(info) = p.get("info")
+            && let Some(tu) = info.get("total_token_usage")
+        {
+            let g = |k: &str| tu.get(k).and_then(Value::as_u64).unwrap_or(0);
+            ctx = ctx.max(g("input_tokens"));
+            out = out.max(g("output_tokens"));
         }
     }
     Ok((events, ctx, out, user_turns))

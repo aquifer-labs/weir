@@ -6,7 +6,7 @@
 
 use anyhow::{Context, Result};
 use clap::Args;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
 #[derive(Args)]

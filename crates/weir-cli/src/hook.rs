@@ -13,10 +13,10 @@
 
 use anyhow::Result;
 use clap::Args;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::Read;
 
-use crate::shape::{shape, Limits};
+use crate::shape::{Limits, shape};
 
 #[derive(Args)]
 pub struct HookArgs {

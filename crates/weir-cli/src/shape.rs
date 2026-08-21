@@ -5,7 +5,7 @@
 //! narrower request, or it returns nothing. A rule that is unsure does nothing —
 //! a missed saving is cheap, a broken tool call is not.
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 /// What a rule decided, and why. The reason is written into the shadow log and,
 /// once gating is live, into the receipt.
@@ -220,10 +220,12 @@ mod tests {
     fn a_bare_cat_is_bounded() {
         let i = json!({"command": "cat /var/log/system.log"});
         let s = shape("Bash", &i, &lim()).unwrap();
-        assert!(s.input["command"]
-            .as_str()
-            .unwrap()
-            .ends_with("| head -c 4000"));
+        assert!(
+            s.input["command"]
+                .as_str()
+                .unwrap()
+                .ends_with("| head -c 4000")
+        );
     }
 
     #[test]
