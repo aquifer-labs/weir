@@ -107,6 +107,30 @@ Reads `~/.claude/projects` and `~/.codex/sessions` by default; override with
 - **Measure end to end.** A filter that halves output but adds a retry made things
   worse. Turn count and task completion are part of the metric.
 
+## Dependencies
+
+Weir runs inside someone else's agent pipeline and fires on every tool call, so
+a compromised transitive dependency would execute with the agent's full reach.
+That is a different risk profile from a library, and the policy is stricter than
+a default because of it — the shape is borrowed from Pi's supply-chain hardening.
+
+- **Exact versions.** Every direct dependency is pinned with `=`. An update is a
+  commit someone reviews, not something that happens because a build ran.
+- **`Cargo.lock` is the record.** CI builds with `--locked`, so it never
+  silently resolves something newer than what was audited.
+- **`cargo deny` in CI** — advisories, licenses, duplicate versions, and source
+  registries. `multiple-versions = "deny"`: two copies of a crate means one of
+  them is not the one you looked at.
+- **The license allow-list names exactly what is in the tree**, so a new licence
+  is a decision rather than a silent addition.
+- **Six direct dependencies, 34 crates in the whole tree.** Adding one should
+  feel like a decision.
+
+Run the same checks locally:
+
+    cargo deny check
+    cargo build --locked --workspace
+
 ## License
 
 Apache-2.0. Part of [Aquifer Labs](https://github.com/aquifer-labs) —
