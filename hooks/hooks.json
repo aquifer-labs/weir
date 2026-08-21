@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "weir hook",
+            "timeout": 5,
+            "statusMessage": "weir: shaping tool input..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "weir hook",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

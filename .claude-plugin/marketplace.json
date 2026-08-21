@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "weir",
+  "description": "Measure and bound what flows into an agent's context.",
+  "owner": { "name": "Aquifer Labs", "url": "https://github.com/aquifer-labs" },
+  "plugins": [
+    {
+      "name": "weir",
+      "description": "Bounds bloated tool results before they reach the model. Requires the `weir` binary on PATH.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
